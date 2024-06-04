@@ -1,2 +1,3 @@
 # Google-Maps-API-JS-integrated-with-Google-Sheet
-Ini adalah code untuk gabungan antara Google Maps API JS dengan Google Sheet sebagai databasenya
+This is the code for combining Google Maps API JS with Google Sheet as the database
+Code html you can modify to be better visually appealing using css.
