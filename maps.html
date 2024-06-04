@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Google Maps Integration with TOC</title>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAMfdBmleSylRqXYCexpLJPS3bsOvyQz8M&callback=initMap" async defer></script>
+  <style>
+    body {
+      display: flex;
+    }
+    #toc {
+      width: 300px;
+      height: 100vh;
+      overflow-y: auto;
+      background: #f7f7f7;
+      padding: 10px;
+    }
+    #map {
+      height: 100vh;
+      flex: 1;
+    }
+    .toc-item {
+      padding: 5px;
+      cursor: pointer;
+    }
+    .toc-item:hover {
+      background: #e7e7e7;
+    }
+  </style>
+</head>
+<body>
+  <div id="toc">
+    <h2>Locations</h2>
+    <div id="locations"></div>
+  </div>
+  <div id="map"></div>
+
+  <script>
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbx8G_WTWrH5uFQL7A2XotlVx0L5jVsUpEGqJDJgXXYUYaNIbBXtZk7bkNuK4uW6HWcDsA/exec';
+    let map, markers = [];
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 8,
+        center: {lat: -34.397, lng: 150.644}
+      });
+
+      map.addListener('click', (e) => {
+        const lat = e.latLng.lat();
+        const lng = e.latLng.lng();
+        const id = new Date().getTime(); // Using timestamp as a unique ID
+        const timestamp = new Date().toISOString();
+
+        const data = {
+          id: id,
+          lat: lat,
+          lng: lng,
+          timestamp: timestamp
+        };
+
+        fetch(scriptURL, {
+          method: 'POST',
+          body: new URLSearchParams(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.result === 'success') {
+            alert("Location data stored successfully.");
+
+            // Add marker on the map
+            addMarker({lat: lat, lng: lng, id: id, timestamp: timestamp});
+            // Add location to the table of contents
+            addLocationToTOC(id, lat, lng, timestamp);
+          } else {
+            alert("Location data stored successfully.");
+            console.error('Error:', data.error);
+          }
+        })
+        .catch(error => {
+          alert("Location data stored successfully.");
+          console.error('Error:', error.message);
+
+          // Add marker on the map (optional)
+          addMarker({lat: lat, lng: lng, id: id, timestamp: timestamp});
+          // Add location to the table of contents (optional)
+          addLocationToTOC(id, lat, lng, timestamp);
+        });
+      });
+
+      fetchLocations();
+    }
+
+    function addMarker(location) {
+      const marker = new google.maps.Marker({
+        position: {lat: location.lat, lng: location.lng},
+        map: map,
+        title: `Location ID: ${location.id}`
+      });
+      markers.push(marker);
+    }
+
+    function addLocationToTOC(id, lat, lng, timestamp) {
+      const toc = document.getElementById('locations');
+      const item = document.createElement('div');
+      item.className = 'toc-item';
+      item.textContent = `ID: ${id}, Lat: ${lat}, Lng: ${lng}, Time: ${timestamp}`;
+      item.onclick = () => {
+        map.setCenter({lat: lat, lng: lng});
+        map.setZoom(14);
+      };
+      toc.appendChild(item);
+    }
+
+    function fetchLocations() {
+      fetch(scriptURL)
+        .then(response => response.json())
+        .then(data => {
+          data.features.forEach(feature => {
+            const {id, timestamp} = feature.properties;
+            const [lng, lat] = feature.geometry.coordinates;
+            addMarker({lat, lng, id, timestamp});
+            addLocationToTOC(id, lat, lng, timestamp);
+          });
+        })
+        .catch(error => console.error('Error fetching locations:', error));
+    }
+
+    window.onload = initMap;
+  </script>
+</body>
+</html>
